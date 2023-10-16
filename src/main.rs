@@ -7,7 +7,8 @@ use axum::{
     // headers::Origin,
     response::{Html, IntoResponse},
     routing::get,
-    Router,
+    Router, 
+    http::HeaderValue,
 };
 
 use hyper::{Method, Server};
@@ -35,7 +36,7 @@ async fn main() {
         .layer(Extension(schema))
         .layer(
             CorsLayer::new()
-                // .allow_origin(Origin::predicate(|_, _| true))
+                .allow_origin("http://localhost:8080".parse::<HeaderValue>().unwrap())
                 .allow_methods(vec![Method::GET, Method::POST]),
         );
 
