@@ -1,13 +1,15 @@
 # Welcome to the Shamba Up 🌱 GraphQL services!
 
 ## Getting Started 🚀
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. The architecture of the project is microservices monorepo. Each service is in its own directory with its own dependencies.
 ### Prerequisites / Installations 👨🏽‍💻
 - [Rust](https://www.rust-lang.org/tools/install)
 - [SurrealDB](https://surrealdb.com/install)
 
 ### Running the services 🏃🏽‍♂️
 - Clone the repo
-- Start SurrealDB
+- Start SurrealDB using the command: `surreal start --log debug --user <username> --pass <password> file://./services/<service_directory>/db-file` in the root directory of the project.\
+e.g. `surreal start --log debug --user root --pass root123 file://./services/acl-service/db-file` will start the ACL service database.
 - Ask the Lead Engineer for the `.env` file and place it in the root directory of the project. N/B: The `.env` file is not committed to the repository for security reasons. It has the database credentials and other sensitive information.
 - Run any service using the command: `cargo watch -x run --workdir services/<directory_of_the_service>` in the root directory. This will start the server and restart it whenever you make changes to the code.\
 e.g. `cargo watch -x run --workdir services/acl-service` will start the ACL service.\
@@ -19,7 +21,7 @@ By default, there is a GraphQL playground available at `http://localhost:<PORT>`
 e.g. `http://localhost:3001` for the ACL service.
 
 ## Contributing 🤝🏽
-Every authorized contributor is allowed to contribute to the repository whether by adding features, bug fixing or participating in code reviews. All code reviews are done on GitHub by the Lead Engineer.\
+Every authorized contributor is allowed to contribute to the repository whether by adding features, bug fixing or participating in code reviews. All code reviews are done on GitHub by the Lead Engineer.
 
 ### Branching 🌳
 - The `main` branch is the default branch and is protected. No one is allowed to push directly to the `main` branch.
