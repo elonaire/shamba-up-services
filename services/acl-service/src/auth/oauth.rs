@@ -155,6 +155,7 @@ pub async fn navigate_to_redirect_url(
     // process.
     println!("Browse to: {}", auth_url);
 
+    // Insert the csrf_state, oauth_client, pkce_verifier cookies
     ctx.insert_http_header(
         SET_COOKIE,
         format!("oauth_client={}", oauth_client_name.fmt()),

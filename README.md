@@ -8,6 +8,7 @@
 ### Running the services 🏃🏽‍♂️
 - Clone the repo
 - Start SurrealDB
+- Ask the Lead Engineer for the `.env` file and place it in the root directory of the project. N/B: The `.env` file is not committed to the repository for security reasons. It has the database credentials and other sensitive information.
 - Run any service using the command: `cargo watch -x run --workdir services/<directory_of_the_service>` in the root directory. This will start the server and restart it whenever you make changes to the code.\
 e.g. `cargo watch -x run --workdir services/acl-service` will start the ACL service.\
 Cargo will automatically install any dependencies that are missing.
