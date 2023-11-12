@@ -24,9 +24,12 @@ dependencies = [
  "chrono",
  "cookie",
  "dotenvy",
+ "hmac",
  "hyper",
+ "jwt",
  "oauth2",
  "serde",
+ "sha2",
  "surrealdb",
  "tokio",
  "tower-http",
@@ -1608,6 +1611,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54c0c35952f67de54bb584e9fd912b3023117cbafc0a77d8f3dee1fb5f572fe8"
 dependencies = [
  "wasm-bindgen",
+]
+
+[[package]]
+name = "jwt"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6204285f77fe7d9784db3fdc449ecce1a0114927a51d5a41c4c7a292011c015f"
+dependencies = [
+ "base64 0.13.1",
+ "crypto-common",
+ "digest",
+ "hmac",
+ "serde",
+ "serde_json",
+ "sha2",
 ]
 
 [[package]]

@@ -94,6 +94,7 @@ impl UserLogins {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, SimpleObject)]
-pub struct AuthUrl {
-    pub url: String,
+pub struct AuthDetails {
+    pub url: Option<String>,
+    pub token: Option<String>,
 }

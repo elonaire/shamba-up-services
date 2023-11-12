@@ -28,6 +28,10 @@ DEFINE FIELD status ON TABLE user TYPE string
   DEFAULT "Active"
 -- Allow only these values in the array
   ASSERT $value INSIDE ["Active", "Inactive", "Suspended", "Deleted"];
+DEFINE FIELD oauth_client ON TABLE user TYPE option<string>
+-- Allow only these values in the array
+  ASSERT $value INSIDE ["Google", "Github", None];
+
 
 -- A schema-full role table.
 DEFINE TABLE role SCHEMAFULL;

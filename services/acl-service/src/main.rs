@@ -46,6 +46,8 @@ async fn graphql_handler(
     let mut request = req.0;
     request = request.data(db.clone());
     // request = request.data(state.clone());
+    // let schema_sdl = schema.sdl();
+    // fs::write("schema.gql", &schema_sdl).expect("Unable to write file");
     schema.execute(request).await.into()
 }
 
