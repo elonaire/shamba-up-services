@@ -88,7 +88,8 @@ impl Mutation {
 
                         if password_match {
                             //TODO: Generate JWT token
-                            let key: Hmac<Sha256> = Hmac::new_from_slice(b"some-secret").unwrap();
+                            let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET not set");
+                            let key: Hmac<Sha256> = Hmac::new_from_slice(secret.as_str().as_bytes()).unwrap();
                             let mut claims = BTreeMap::new();
                             claims.insert("sub", "someone");
 
