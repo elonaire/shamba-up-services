@@ -158,10 +158,10 @@ pub async fn navigate_to_redirect_url(
     // Insert the csrf_state, oauth_client, pkce_verifier cookies
     ctx.insert_http_header(
         SET_COOKIE,
-        format!("oauth_client={}", oauth_client_name.fmt()),
+        format!("oauth_client={}; SameSite=Strict;", oauth_client_name.fmt()),
     );
-    ctx.append_http_header(SET_COOKIE, format!("csrf_state={}", csrf_token.secret()));
-    ctx.append_http_header(SET_COOKIE, format!("pkce_verifier={}", pkce_verifier.secret()));
+    ctx.append_http_header(SET_COOKIE, format!("csrf_state={}; SameSite=Strict;", csrf_token.secret()));
+    ctx.append_http_header(SET_COOKIE, format!("pkce_verifier={}; SameSite=Strict;", pkce_verifier.secret()));
 
     auth_url.to_string()
 }
