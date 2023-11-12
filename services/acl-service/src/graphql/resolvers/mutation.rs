@@ -79,7 +79,7 @@ impl Mutation {
                 let response: Option<User> = result.take(0)?;
 
                 match &response {
-                    Some(_user) => {
+                    Some(user) => {
                         let password_match = bcrypt::verify(
                             &user_details.password.unwrap(),
                             response.clone().unwrap().password.as_str(),
@@ -87,11 +87,10 @@ impl Mutation {
                         .unwrap();
 
                         if password_match {
-                            //TODO: Generate JWT token
                             let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET not set");
                             let key: Hmac<Sha256> = Hmac::new_from_slice(secret.as_str().as_bytes()).unwrap();
                             let mut claims = BTreeMap::new();
-                            claims.insert("sub", "someone");
+                            claims.insert("sub", user.id.as_ref().map(|t| &t.id).expect("id").to_raw());
 
                             let token_str = claims.sign_with_key(&key).unwrap();
                             Ok(AuthDetails {
