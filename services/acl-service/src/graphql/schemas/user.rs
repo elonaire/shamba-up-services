@@ -98,3 +98,63 @@ pub struct AuthDetails {
     pub url: Option<String>,
     pub token: Option<String>,
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize, SimpleObject)]
+pub struct AuthStatus {
+    pub is_auth: bool,
+}
+
+#[derive(Serialize)]
+#[serde(untagged)]
+pub enum JWTClaimBTreeMapItem {
+    String(String),
+    Integer(u64),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, SimpleObject)]
+pub struct DecodedGoogleOAuthToken {
+    pub azp: String,
+    pub aud: String,
+    pub sub: String,
+    pub scope: String,
+    pub exp: String,
+    pub expires_in: String,
+}
+
+// use the json above to create a struct
+#[derive(Clone, Debug, Serialize, Deserialize, SimpleObject)]
+pub struct DecodedGithubOAuthToken {
+    pub login: String,
+    pub id: u64,
+    pub node_id: String,
+    pub avatar_url: String,
+    pub gravatar_id: String,
+    pub url: String,
+    pub html_url: String,
+    pub followers_url: String,
+    pub following_url: String,
+    pub gists_url: String,
+    pub starred_url: String,
+    pub subscriptions_url: String,
+    pub organizations_url: String,
+    pub repos_url: String,
+    pub events_url: String,
+    pub received_events_url: String,
+    pub r#type: String,
+    pub site_admin: bool,
+    pub name: String,
+    pub company: Option<String>,
+    pub blog: Option<String>,
+    pub location: Option<String>,
+    pub email: Option<String>,
+    pub hireable: Option<bool>,
+    pub bio: Option<String>,
+    pub twitter_username: Option<String>,
+    pub public_repos: u64,
+    pub public_gists: u64,
+    pub followers: u64,
+    pub following: u64,
+    pub created_at: String,
+    pub updated_at: String,
+}
+

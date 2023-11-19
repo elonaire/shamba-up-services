@@ -13,7 +13,7 @@ use crate::{
     auth::oauth::{initiate_auth_code_grant_flow, navigate_to_redirect_url},
     graphql::schemas::{
         role::SystemRole,
-        user::{AuthDetails, User, UserLogins},
+        user::{AuthDetails, User, UserLogins, JWTClaimBTreeMapItem},
     },
 };
 
@@ -99,16 +99,16 @@ impl Mutation {
                             let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET not set");
                             let key: Hmac<Sha256> =
                                 Hmac::new_from_slice(secret.as_str().as_bytes()).unwrap();
-                            let mut claims = BTreeMap::new();
+                            let mut claims: BTreeMap<&str, JWTClaimBTreeMapItem> = BTreeMap::new();
                             let expiry_duration = Duration::from_secs(15 * 60); // minutes by 60 seconds
                             let current_time = SystemTime::now()
                                 .duration_since(UNIX_EPOCH)
                                 .expect("Time went backwards");
-                            let expiry_time = current_time + expiry_duration;
-                            claims.insert("exp", expiry_time.as_secs().to_string());
+                            let expiry_time = current_time.as_secs() + expiry_duration.as_secs();
+                            claims.insert("exp", JWTClaimBTreeMapItem::Integer(expiry_time));
                             claims.insert(
                                 "sub",
-                                user.id.as_ref().map(|t| &t.id).expect("id").to_raw(),
+                                JWTClaimBTreeMapItem::String(user.id.as_ref().map(|t| &t.id).expect("id").to_raw()),
                             );
 
                             // Generate JWT refresh token
@@ -119,16 +119,21 @@ impl Mutation {
                                     .as_bytes(),
                             ).unwrap();
 
-                            let mut refresh_token_claims = BTreeMap::new();
+                            let mut refresh_token_claims: BTreeMap<&str, JWTClaimBTreeMapItem> = BTreeMap::new();
                             let refresh_token_expiry_duration = Duration::from_secs(30 * 24 * 60 * 60); // minutes by 60 seconds
                             let refresh_token_current_time = SystemTime::now()
                                 .duration_since(UNIX_EPOCH)
                                 .expect("Time went backwards");
                             let refresh_token_expiry_time =
-                                refresh_token_current_time + refresh_token_expiry_duration;
+                                refresh_token_current_time.as_secs() + refresh_token_expiry_duration.as_secs();
                             refresh_token_claims.insert(
                                 "exp",
-                                refresh_token_expiry_time.as_secs().to_string(),
+                                JWTClaimBTreeMapItem::Integer(refresh_token_expiry_time).into(),
+                            );
+
+                            refresh_token_claims.insert(
+                                "sub",
+                                JWTClaimBTreeMapItem::String(user.id.as_ref().map(|t| &t.id).expect("id").to_raw()).into(),
                             );
 
                             let refresh_token_str = refresh_token_claims
@@ -145,6 +150,11 @@ impl Mutation {
                                 ),
                             );
                             let token_str = claims.sign_with_key(&key).unwrap();
+
+                            ctx.insert_http_header(
+                                SET_COOKIE,
+                                format!("oauth_client="),
+                            );
                             Ok(AuthDetails {
                                 token: Some(token_str),
                                 url: None,
@@ -157,5 +167,14 @@ impl Mutation {
                 }
             }
         }
+    }
+
+    async fn sign_out(&self, ctx: &Context<'_>) -> Result<bool> {
+        // Clear the refresh token cookie
+        ctx.insert_http_header(
+            SET_COOKIE,
+            format!("refresh_token=; SameSite=Strict; Max-Age=0"),
+        );
+        Ok(true)
     }
 }

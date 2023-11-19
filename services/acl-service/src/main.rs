@@ -11,7 +11,7 @@ use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
     extract::{Extension, Query as AxumQuery},
     headers::Cookie,
-    http::HeaderValue,
+    http::{HeaderValue, HeaderMap},
     response::{Html, IntoResponse},
     routing::get,
     Json, Router, TypedHeader,
@@ -41,13 +41,14 @@ async fn graphql_handler(
     schema: Extension<MySchema>,
     db: Extension<Arc<Surreal<Client>>>,
     // state: Extension<SharedState>,
+    headers: HeaderMap,
     req: GraphQLRequest,
+    
 ) -> GraphQLResponse {
     let mut request = req.0;
     request = request.data(db.clone());
     // request = request.data(state.clone());
-    // let schema_sdl = schema.sdl();
-    // fs::write("schema.gql", &schema_sdl).expect("Unable to write file");
+    request = request.data(headers.clone());
     schema.execute(request).await.into()
 }
 
@@ -69,25 +70,29 @@ struct Params {
 }
 
 // client agnostic oauth handler
-async fn auth_handler(
+async fn oauth_handler(
     params: AxumQuery<Params>,
     TypedHeader(cookies): TypedHeader<Cookie>,
 ) -> Json<StandardTokenResponse<EmptyExtraTokenFields, BasicTokenType>> {
-    println!("params: {:?}", params.0);
+    // println!("params: {:?}", params.0);
     // get the csrf state from the cookie
     // Extract the csrf_state, oauth_client, pkce_verifier cookies
-    let csrf_state = cookies
-        .get("csrf_state")
-        .unwrap_or_else(|| panic!("CSRF state cookie not found"));
+    
     let oauth_client_name = cookies
         .get("oauth_client")
         .unwrap_or_else(|| panic!("OAuth client name cookie not found"));
     let pcke_verifier_secret = cookies
-        .get("pkce_verifier")
+        .get("k")
         .unwrap_or_else(|| panic!("OAuth client name cookie not found"));
+    let csrf_state = cookies
+        .get("j")
+        .unwrap_or_else(|| panic!("CSRF state cookie not found"));
 
+    println!("pcke_verifier_secret: {:?}", pcke_verifier_secret);
+    println!("params.0.state.unwrap(): {:?}", &params.0.clone().state.unwrap());
+    println!("csrf_state: {:?}", csrf_state);
     if params.0.state.unwrap() != csrf_state {
-        panic!("CSRF token mismatch! Aborting request. Might be a hacker 🥷🏻 !");
+        panic!("CSRF token mismatch! Aborting request. Might be a hacker 🥷🏻!");
     }
 
     // We need to get the same client instance that we used to generate the auth url. Hence the cookies.
@@ -124,7 +129,7 @@ async fn main() -> Result<()> {
 
     let app = Router::new()
         .route("/", get(graphiql).post(graphql_handler))
-        .route("/oauth/callback", get(auth_handler))
+        .route("/oauth/callback", get(oauth_handler))
         .layer(Extension(schema))
         .layer(Extension(db))
         // .layer(Extension(state))
