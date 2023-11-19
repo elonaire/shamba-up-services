@@ -1,4 +1,5 @@
 use std::env;
+use std::time::Duration;
 
 use async_graphql::{Context, Enum};
 use dotenvy::dotenv;
@@ -143,6 +144,7 @@ pub async fn navigate_to_redirect_url(
                 // Set the desired scopes.
                 .add_scope(Scope::new("read".to_string()))
                 .add_scope(Scope::new("write".to_string()))
+                .add_scope(Scope::new("user".to_string()))
         }
     };
 
@@ -156,12 +158,15 @@ pub async fn navigate_to_redirect_url(
     println!("Browse to: {}", auth_url);
 
     // Insert the csrf_state, oauth_client, pkce_verifier cookies
+    // TODO: Add back these on HTTPS? <cookie_name>={}; HttpOnly; SameSite=Strict;
     ctx.insert_http_header(
         SET_COOKIE,
         format!("oauth_client={}", oauth_client_name.fmt()),
     );
-    ctx.append_http_header(SET_COOKIE, format!("csrf_state={}", csrf_token.secret()));
-    ctx.append_http_header(SET_COOKIE, format!("pkce_verifier={}", pkce_verifier.secret()));
+
+    let sensitive_cookies_expiry_duration = Duration::from_secs(120); // limit the duration of the sensitive cookies
+    ctx.append_http_header(SET_COOKIE, format!("j={}; Max-Age={}", csrf_token.secret(), sensitive_cookies_expiry_duration.as_secs()));
+    ctx.append_http_header(SET_COOKIE, format!("k={}; Max-Age={}", pkce_verifier.secret(), sensitive_cookies_expiry_duration.as_secs()));
 
     auth_url.to_string()
 }
