@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  acl-service:
+    image: acl-service:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: acl-service
+    env_file:
+      - .env
+    # Define other configurations as needed, such as ports, volumes, etc.
+
+
+# Add any network or volume configurations if needed
