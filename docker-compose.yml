@@ -8,8 +8,8 @@ services:
       dockerfile: Dockerfile
       args:
         SERVICE_NAME: acl-service
-    env_file:
-      - .env
+    # env_file:
+    #   - .env
     # Define other configurations as needed, such as ports, volumes, etc.
 
 
