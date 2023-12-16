@@ -17,7 +17,6 @@ chrono = "0.4.31"
 serde = "1.0.189"
 bcrypt = "0.15.0"
 oauth2 = "4.4.2"
-anyhow = "1.0.75"
 cookie = "0.18.0"
 dotenvy = "0.15.7"
 jwt = "0.16.0"
@@ -26,3 +25,6 @@ sha2 = "0.10.8"
 async-trait = "0.1.74"
 lib = { path = "../../lib" }
 reqwest = { version = "0.11.6", features = ["json"] }
+
+[future-incompat-report]
+frequency = "always"

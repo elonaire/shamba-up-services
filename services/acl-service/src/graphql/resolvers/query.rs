@@ -8,7 +8,7 @@ use axum::{
 use dotenvy::dotenv;
 use hmac::{Hmac, Mac};
 use jwt::VerifyWithKey;
-use lib::utils::cookie_parser::parse_cookies;
+use lib::utils::{cookie_parser::parse_cookies, custom_error::ExtendedError};
 use reqwest::{Client as ReqWestClient, header::HeaderMap as ReqWestHeaderMap};
 use sha2::Sha256;
 use surrealdb::{engine::remote::ws::Client, Surreal};
@@ -116,21 +116,23 @@ impl Query {
                                                                         }
                                                                         Err(_err) => {
                                                                             // Refresh token verification failed
-                                                                            return Err(Error::new(
+                                                                            return Err(ExtendedError::new(
                                                                                         "Not Authorized!",
-                                                                                    ));
+                                                                                        Some(403)
+                                                                                    ).build());
                                                                         }
                                                                     }
                                                                 }
-                                                                None => Err(Error::new(
+                                                                None => Err(ExtendedError::new(
                                                                     "Not Authorized!",
-                                                                )),
+                                                                    Some(403)
+                                                                ).build()),
                                                             }
                                                             // return Err(Error::new("Not Authorized!"));
                                                         }
                                                     }
                                                 }
-                                                None => Err(Error::new("Invalid header(s)")),
+                                                None => Err(ExtendedError::new("Invalid request!", Some(400)).build()),
                                             }
                                         } else {
                                             let oauth_client_name =
@@ -185,16 +187,16 @@ impl Query {
                                             }
                                         }
                                     }
-                                    None => Err(Error::new("Not Authorized!")),
+                                    None => Err(ExtendedError::new("Not Authorized!", Some(403)).build()),
                                 }
                             }
-                            None => Err(Error::new("Not Authorized!")),
+                            None => Err(ExtendedError::new("Not Authorized!", Some(403)).build()),
                         }
                     }
-                    None => Err(Error::new("Not Authorized!")),
+                    None => Err(ExtendedError::new("Not Authorized!", Some(403)).build()),
                 }
             }
-            None => Err(Error::new("Invalid request!")),
+            None => Err(ExtendedError::new("Invalid request!", Some(400)).build()),
         }
     }
 }

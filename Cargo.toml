@@ -6,3 +6,6 @@ members = [
     "services/acl-service",
     # Add other services here
 ]
+
+[profile.release]
+strip = true  # Automatically strip symbols from the binary.

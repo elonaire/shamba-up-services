@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 cookie = "0.18.0"
+async-graphql = "6.0.7"
