@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   acl-service:
-    image: acl-service:latest
+    image: elonaire/acl-service:latest
     build:
       context: .
       dockerfile: Dockerfile
