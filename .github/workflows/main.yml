@@ -35,9 +35,10 @@ jobs:
       
       - id: confirm_changes
         name: Confirm Changes
+        shell: bash
         run: |
           SHOULD_RUN='false'
-          
+
           # Show paths
           echo "Paths: ${{ env.PATHS }}"
 
