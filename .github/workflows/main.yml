@@ -13,14 +13,13 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  SHOULD_RUN: 'true'
+  SHOULD_RUN: 'false'
+  PATHS: 'services/acl-service/,services/shared-service/'
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   build_and_deploy_acl:
     runs-on: ubuntu-latest
     # needs: [build]
-    outputs:
-      should_run: ${{ steps.set_should_run.outputs.should_run }}
 
     permissions:
       id-token: write # required to use OIDC authentication
@@ -29,20 +28,35 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - id: set_should_run
+      - id: file_changes
         name: Check for ACL Service Changes
         run: |
-          SHOULD_RUN="false"
-          for file in ${{ github.event.pull_request.changed_files }}
+          SHOULD_RUN='false'
+          echo "files=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | xargs)" >> $GITHUB_OUTPUT
+      
+      - id: confirm_changes
+        name: Confirm Changes
+        run: |
+          # Show paths
+          echo "Paths: ${{ env.paths }}"
+
+          # Get the list of paths being monitored
+          monitored_paths=$(echo "${{ env.paths }}" | tr "," " ")
+          echo "Monitored paths: $monitored_paths"
+          echo "Changed files: ${{ steps.file_changes.outputs.files }}"
+          echo "If you see here files that you have not modified, please update your branch with changes from main."
+
+          # Loop through each path
+          for path in $monitored_paths
           do
-            echo "file=$file"
-            if [[ "$file" == services/acl-service/* ]]; then
-              SHOULD_RUN="true"
+            # Check if the modified files include this path
+            if echo "${{ steps.file_changes.outputs.files }}" | grep -q "$path"; then
+              # Set the output variable and exit the loop
+              echo "triggering_path is $path"
+              SHOULD_RUN='true'
               break
             fi
           done
-          echo "SHOULD_RUN=$SHOULD_RUN" >> $GITHUB_ENV
-          echo "::set-output name=should_run::$SHOULD_RUN"
 
       - if: env.SHOULD_RUN == 'true'
         name: Set up Docker Buildx
