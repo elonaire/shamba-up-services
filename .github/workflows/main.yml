@@ -73,6 +73,7 @@ jobs:
     runs-on: ubuntu-latest
 
     needs: [build_and_deploy_acl, build_and_deploy_shared_service]
+    if: needs.build_and_deploy_acl.result == 'success' || needs.build_and_deploy_shared_service.result == 'success'
 
     steps:
       - id: automerge
