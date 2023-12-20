@@ -1,15 +1,28 @@
 version: '3.8'
 
+networks:
+  app-tier:
+    driver: bridge
+
 services:
   acl-db:
     image: surrealdb/surrealdb:1.0.0
     ports:
       - 8000:8000
-    command: start --log debug --file /var/lib/surrealdb/data
+    container_name: acl-db
+    networks:
+      - app-tier
+    user: root
+    command: start --log debug --user root --pass root file:/db-data/mydatabase.db
     volumes:
-      - acl-servicedb:/var/lib/surrealdb/data
+      - acl-servicedb:/db-data
   acl-service:
     image: elonaire/acl-service:latest
+    ports:
+      - 3001:3001
+    container_name: acl-service
+    networks:
+      - app-tier
     build:
       context: .
       dockerfile: Dockerfile

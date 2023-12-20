@@ -1,16 +1,29 @@
 version: '3.8'
 
+networks:
+  app-tier:
+    driver: bridge
+
 services:
-  shared-service-db:
+  shared-servicedb:
     image: surrealdb/surrealdb:1.0.0
     ports:
       - 8001:8000
-    command: start --log debug --file /var/lib/surrealdb/data
+    container_name: shared-servicedb
+    networks:
+      - app-tier
+    user: root
+    command: start --log debug --user root --pass root file:/db-data/mydatabase.db
     volumes:
-      - acl-servicedb:/var/lib/surrealdb/data
+      - shared-servicedb:/db-data
 
   shared-service:
     image: elonaire/shared-service:latest
+    ports:
+      - 3002:3002
+    container_name: shared-service
+    networks:
+      - app-tier
     build:
       context: .
       dockerfile: Dockerfile
@@ -24,4 +37,7 @@ services:
       - DATABASE_HOST=${DATABASE_HOST}
       - DATABASE_PORT_ACL=${DATABASE_PORT_ACL}
     depends_on:
-      - shared-service-db
+      - shared-servicedb
+
+volumes:
+    shared-servicedb:
