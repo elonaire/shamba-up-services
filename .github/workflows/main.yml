@@ -17,7 +17,7 @@ env:
 jobs:
   build_and_deploy_acl:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.modified, 'services/acl-service/')
+    if: contains(github.event.pull_request.changed_files, 'services/acl-service/')
     # needs: [build]
 
     permissions:
@@ -44,7 +44,7 @@ jobs:
 
   build_and_deploy_shared_service:
     runs-on: ubuntu-latest
-    if: contains(github.event.head_commit.modified, 'services/shared-service/')
+    if: contains(github.event.pull_request.changed_files, 'services/shared-service/')
     # needs: [build]
 
     permissions:
