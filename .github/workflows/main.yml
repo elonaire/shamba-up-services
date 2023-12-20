@@ -31,17 +31,18 @@ jobs:
       - id: file_changes
         name: Check for ACL Service Changes
         run: |
-          SHOULD_RUN='false'
           echo "files=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | xargs)" >> $GITHUB_OUTPUT
       
       - id: confirm_changes
         name: Confirm Changes
         run: |
+          SHOULD_RUN='false'
+          
           # Show paths
-          echo "Paths: ${{ env.paths }}"
+          echo "Paths: ${{ env.PATHS }}"
 
           # Get the list of paths being monitored
-          monitored_paths=$(echo "${{ env.paths }}" | tr "," " ")
+          monitored_paths=$(echo "${{ env.PATHS }}" | tr "," " ")
           echo "Monitored paths: $monitored_paths"
           echo "Changed files: ${{ steps.file_changes.outputs.files }}"
           echo "If you see here files that you have not modified, please update your branch with changes from main."
