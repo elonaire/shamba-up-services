@@ -15,9 +15,9 @@ env:
   CARGO_TERM_COLOR: always
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  build_and_deploy:
+  build_and_deploy_acl:
     runs-on: ubuntu-latest
-
+    if: contains(github.event.head_commit.modified, 'services/acl-service/')
     # needs: [build]
 
     permissions:
@@ -37,7 +37,34 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Build the Docker image
-        run: docker-compose build
+        run: docker-compose  -f docker-compose.yml -f docker-compose.acl.yml build
+    
+      - name: Push the Docker image
+        run: docker-compose push
+
+  build_and_deploy_shared_service:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.modified, 'services/shared-service/')
+    # needs: [build]
+
+    permissions:
+      id-token: write # required to use OIDC authentication
+      contents: read # required to checkout the code from the repo
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - name: Build the Docker image
+        run: docker-compose  -f docker-compose.yml -f docker-compose.shared.yml build
     
       - name: Push the Docker image
         run: docker-compose push
@@ -45,7 +72,7 @@ jobs:
   automerge:
     runs-on: ubuntu-latest
 
-    needs: [build_and_deploy]
+    needs: [build_and_deploy_acl]
 
     steps:
       - id: automerge

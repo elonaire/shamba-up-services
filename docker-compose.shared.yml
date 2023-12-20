@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  shared-service-db:
+    image: surrealdb/surrealdb:1.0.0
+    ports:
+      - 8001:8000
+    command: start --log debug --file /var/lib/surrealdb/data
+    volumes:
+      - acl-servicedb:/var/lib/surrealdb/data
+
+  shared-service:
+    image: elonaire/shared-service:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: shared-service
+    environment:
+      - DATABASE_NAMESPACE=${DATABASE_NAMESPACE}
+      - DATABASE_NAME_ACL=${DATABASE_NAME_ACL}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_PORT_ACL=${DATABASE_PORT_ACL}
+    depends_on:
+      - shared-service-db
