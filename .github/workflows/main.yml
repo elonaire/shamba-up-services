@@ -35,6 +35,7 @@ jobs:
           SHOULD_RUN="false"
           for file in ${{ github.event.pull_request.changed_files }}
           do
+            echo "file=$file"
             if [[ "$file" == services/acl-service/* ]]; then
               SHOULD_RUN="true"
               break
