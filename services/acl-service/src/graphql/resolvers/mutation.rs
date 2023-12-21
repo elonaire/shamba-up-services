@@ -141,19 +141,21 @@ impl Mutation {
                                 .unwrap();
 
                             // set refresh token in HttpOnly cookie after symetric encryption
-                            ctx.insert_http_header(
-                                SET_COOKIE,
-                                format!(
-                                    "refresh_token={}; SameSite=Strict; Max-Age={}",
-                                    refresh_token_str,
-                                    refresh_token_expiry_duration.as_secs()
-                                ),
-                            );
+                            
                             let token_str = claims.sign_with_key(&key).unwrap();
 
                             ctx.insert_http_header(
                                 SET_COOKIE,
                                 format!("oauth_client="),
+                            );
+
+                            ctx.append_http_header(
+                                SET_COOKIE,
+                                format!(
+                                    "t={}; Max-Age={}",
+                                    refresh_token_str,
+                                    refresh_token_expiry_duration.as_secs()
+                                ),
                             );
                             Ok(AuthDetails {
                                 token: Some(token_str),
@@ -173,7 +175,7 @@ impl Mutation {
         // Clear the refresh token cookie
         ctx.insert_http_header(
             SET_COOKIE,
-            format!("refresh_token=; SameSite=Strict; Max-Age=0"),
+            format!("t=; Max-Age=0"),
         );
         Ok(true)
     }

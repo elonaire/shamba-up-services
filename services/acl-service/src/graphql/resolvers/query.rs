@@ -82,7 +82,7 @@ impl Query {
                                                         }
                                                         Err(_err) => {
                                                             // Token verification failed, check if refresh token is present
-                                                            match cookies.get("refresh_token") {
+                                                            match cookies.get("t") {
                                                                 Some(refresh_token) => {
                                                                     let jwt_refresh_key: Hmac<
                                                                         Sha256,
