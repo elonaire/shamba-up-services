@@ -27,6 +27,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - id: file_changes
         name: Check for ACL Service Changes
