@@ -36,7 +36,7 @@ jobs:
           echo "Base SHA: ${{ github.event.pull_request.base.sha }}"
           echo "Head SHA: ${{ github.sha }}"
           files_temp=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
-          files=$(echo "$files_temp" | tr '\n' ' ')
+          files=$(echo "$files_temp" | tr "\n" " ")
           echo "$files" >> $GITHUB_OUTPUT
       
       - id: confirm_changes
