@@ -37,7 +37,7 @@ jobs:
           echo "Head SHA: ${{ github.sha }}"
           files_temp=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
           files=$(echo "$files_temp" | tr "\n" " ")
-          echo "$files" >> $GITHUB_OUTPUT
+          echo "changed_files=$files" >> $GITHUB_OUTPUT
       
       - id: confirm_changes
         name: Confirm Changes
@@ -51,14 +51,14 @@ jobs:
           # Get the list of paths being monitored
           monitored_paths=$(echo "${{ env.PATHS }}" | tr "," " ")
           echo "Monitored paths: $monitored_paths"
-          echo "Changed files: ${{ steps.file_changes.outputs.files }}"
+          echo "Changed files: ${{ steps.file_changes.outputs.changed_files }}"
           echo "If you see here files that you have not modified, please update your branch with changes from main."
 
           # Loop through each path
           for path in $monitored_paths
           do
             # Check if the modified files include this path
-            if echo "${{ steps.file_changes.outputs.files }}" | grep -q "$path"; then
+            if echo "${{ steps.file_changes.outputs.changed_files }}" | grep -q "$path"; then
               # Set the output variable and exit the loop
               echo "triggering_path is $path"
               SHOULD_RUN='true'
