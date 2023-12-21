@@ -51,9 +51,8 @@ jobs:
           # Check if the modified files include this path
           if echo "${{ steps.file_changes.outputs.changed_files }}" | grep -q "${{ env.ACL_PATHS }}"; then
             # Set the output variable and exit the loop
-            echo "triggering_path is $path"
+            echo "triggering_path is ${{ env.ACL_PATHS }}"
             echo "ACL_SHOULD_DEPLOY=true" >> $GITHUB_ENV
-            break
           fi
   check_shared_service_changes:
     runs-on: ubuntu-latest
@@ -87,9 +86,8 @@ jobs:
           # Check if the modified files include this path
           if echo "${{ steps.file_changes.outputs.changed_files }}" | grep -q "${{ env.SHARED_SERVICE_PATHS }}"; then
             # Set the output variable and exit the loop
-            echo "triggering_path is $path"
+            echo "triggering_path is ${{ env.SHARED_SERVICE_PATHS }}"
             echo "SHARED_SERVICE_SHOULD_DEPLOY=true" >> $GITHUB_ENV
-            break
           fi
   build_and_deploy_acl:
     runs-on: ubuntu-latest
