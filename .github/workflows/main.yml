@@ -61,7 +61,7 @@ jobs:
             if echo "${{ steps.file_changes.outputs.changed_files }}" | grep -q "$path"; then
               # Set the output variable and exit the loop
               echo "triggering_path is $path"
-              SHOULD_RUN='true'
+              echo "SHOULD_RUN=true" >> $GITHUB_ENV
               break
             fi
           done
