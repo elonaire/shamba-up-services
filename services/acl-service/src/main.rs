@@ -88,9 +88,6 @@ async fn oauth_handler(
         .get("j")
         .unwrap_or_else(|| panic!("CSRF state cookie not found"));
 
-    println!("pcke_verifier_secret: {:?}", pcke_verifier_secret);
-    println!("params.0.state.unwrap(): {:?}", &params.0.clone().state.unwrap());
-    println!("csrf_state: {:?}", csrf_state);
     if params.0.state.unwrap() != csrf_state {
         panic!("CSRF token mismatch! Aborting request. Might be a hacker 🥷🏻!");
     }
