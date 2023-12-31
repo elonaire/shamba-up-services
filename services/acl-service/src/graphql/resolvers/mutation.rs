@@ -1,23 +1,25 @@
-use std::{sync::Arc, time::{UNIX_EPOCH, SystemTime, Duration}};
+use std::sync::Arc;
 
 use async_graphql::{Context, Error, Object, Result};
 use axum::Extension;
-use hmac::{Hmac, Mac};
 use hyper::header::SET_COOKIE;
-use jwt::SignWithKey;
-use sha2::Sha256;
-use std::collections::BTreeMap;
+use jwt_simple::prelude::*;
 use surrealdb::{engine::remote::ws::Client, Surreal};
 
 use crate::{
     auth::oauth::{initiate_auth_code_grant_flow, navigate_to_redirect_url},
     graphql::schemas::{
         role::SystemRole,
-        user::{AuthDetails, User, UserLogins, JWTClaimBTreeMapItem},
+        user::{AuthDetails, User, UserLogins, SymKey},
     },
 };
 
 pub struct Mutation;
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AuthClaim {
+    // pub sub: String,
+    roles: Vec<String>,
+}
 
 #[Object]
 impl Mutation {
@@ -95,59 +97,48 @@ impl Mutation {
                         .unwrap();
 
                         if password_match {
-                            // Generate JWT access token
-                            let secret = std::env::var("JWT_SECRET").expect("JWT_SECRET not set");
-                            let key: Hmac<Sha256> =
-                                Hmac::new_from_slice(secret.as_str().as_bytes()).unwrap();
-                            let mut claims: BTreeMap<&str, JWTClaimBTreeMapItem> = BTreeMap::new();
-                            let expiry_duration = Duration::from_secs(15 * 60); // minutes by 60 seconds
-                            let current_time = SystemTime::now()
-                                .duration_since(UNIX_EPOCH)
-                                .expect("Time went backwards");
-                            let expiry_time = current_time.as_secs() + expiry_duration.as_secs();
-                            claims.insert("exp", JWTClaimBTreeMapItem::Integer(expiry_time));
-                            claims.insert(
-                                "sub",
-                                JWTClaimBTreeMapItem::String(user.id.as_ref().map(|t| &t.id).expect("id").to_raw()),
-                            );
-
-                            // Generate JWT refresh token
-                            let refresh_token_key: Hmac<Sha256> = Hmac::new_from_slice(
-                                std::env::var("JWT_REFRESH_SECRET")
-                                    .expect("JWT_REFRESH_SECRET not set")
-                                    .as_str()
-                                    .as_bytes(),
-                            ).unwrap();
-
-                            let mut refresh_token_claims: BTreeMap<&str, JWTClaimBTreeMapItem> = BTreeMap::new();
                             let refresh_token_expiry_duration = Duration::from_secs(30 * 24 * 60 * 60); // minutes by 60 seconds
-                            let refresh_token_current_time = SystemTime::now()
-                                .duration_since(UNIX_EPOCH)
-                                .expect("Time went backwards");
-                            let refresh_token_expiry_time =
-                                refresh_token_current_time.as_secs() + refresh_token_expiry_duration.as_secs();
-                            refresh_token_claims.insert(
-                                "exp",
-                                JWTClaimBTreeMapItem::Integer(refresh_token_expiry_time).into(),
-                            );
+                            // TODO: Store the key in the database, generate a new key if the key is not found
+                            let key: Vec<u8>;
+                            let db = ctx.data::<Extension<Arc<Surreal<Client>>>>().unwrap();
+                            let mut result = db.query("SELECT * FROM type::table($table) WHERE name = 'jwt_key' LIMIT 1")
+                                .bind(("table", "keys"))
+                                .await?;
+                            let response: Option<SymKey> = result.take(0)?;
 
-                            refresh_token_claims.insert(
-                                "sub",
-                                JWTClaimBTreeMapItem::String(user.id.as_ref().map(|t| &t.id).expect("id").to_raw()).into(),
-                            );
+                            match &response {
+                                Some(key_container) => {
+                                    key = key_container.key.clone();
+                                }
+                                None => {
+                                    key = HS256Key::generate().to_bytes();
+                                    let _reslt: Vec<SymKey> = db.create("keys")
+                                        .content(SymKey {
+                                            key: key.clone(),
+                                            name: "jwt_key".to_string(),
+                                        })
+                                        .await?;
+                                }
+                            }
 
-                            let refresh_token_str = refresh_token_claims
-                                .sign_with_key(&refresh_token_key)
-                                .unwrap();
+                            let auth_claim = AuthClaim {
+                                roles: user
+                                    .roles
+                                    .as_ref()
+                                    .map(|t| t.iter().map(|t| t.id.to_raw()).collect())
+                                    .unwrap_or(vec![]),
+                            };
 
-                            // set refresh token in HttpOnly cookie after symetric encryption
-                            
-                            let token_str = claims.sign_with_key(&key).unwrap();
+                            let converted_key = HS256Key::from_bytes(&key);
 
-                            ctx.insert_http_header(
-                                SET_COOKIE,
-                                format!("oauth_client="),
-                            );
+                            let mut token_claims = Claims::with_custom_claims(auth_claim.clone(), Duration::from_secs(15 * 60));
+                            token_claims.subject = Some(user.id.as_ref().map(|t| &t.id).expect("id").to_raw());
+                            let token_str = converted_key.authenticate(token_claims).unwrap();
+
+                            let refresh_token_claims = Claims::with_custom_claims(auth_claim.clone(), refresh_token_expiry_duration);
+                            let refresh_token_str = converted_key.authenticate(refresh_token_claims).unwrap();
+
+                            ctx.insert_http_header(SET_COOKIE, format!("oauth_client="));
 
                             ctx.append_http_header(
                                 SET_COOKIE,
@@ -173,10 +164,7 @@ impl Mutation {
 
     async fn sign_out(&self, ctx: &Context<'_>) -> Result<bool> {
         // Clear the refresh token cookie
-        ctx.insert_http_header(
-            SET_COOKIE,
-            format!("t=; Max-Age=0"),
-        );
+        ctx.insert_http_header(SET_COOKIE, format!("t=; Max-Age=0"));
         Ok(true)
     }
 }

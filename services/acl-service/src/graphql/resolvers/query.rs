@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, env, sync::Arc};
+use std::sync::Arc;
 
 use async_graphql::{Context, Error, Object, Result};
 use axum::{
@@ -6,17 +6,20 @@ use axum::{
     Extension,
 };
 use dotenvy::dotenv;
-use hmac::{Hmac, Mac};
-use jwt::VerifyWithKey;
+use hyper::Method;
+use jwt_simple::prelude::*;
 use lib::utils::{cookie_parser::parse_cookies, custom_error::ExtendedError};
-use reqwest::{Client as ReqWestClient, header::HeaderMap as ReqWestHeaderMap};
-use sha2::Sha256;
+use reqwest::{header::HeaderMap as ReqWestHeaderMap, Client as ReqWestClient};
 use surrealdb::{engine::remote::ws::Client, Surreal};
 
 use crate::{
     auth::oauth::{self, OAuthClientName},
-    graphql::schemas::user::{AuthStatus, DecodedGithubOAuthToken, DecodedGoogleOAuthToken, User},
+    graphql::schemas::user::{
+        AuthStatus, DecodedGithubOAuthToken, DecodedGoogleOAuthToken, SymKey, User,
+    },
 };
+
+use super::mutation::AuthClaim;
 
 pub struct Query;
 
@@ -35,10 +38,10 @@ impl Query {
 
     async fn check_auth(&self, ctx: &Context<'_>) -> Result<AuthStatus> {
         dotenv().ok();
-        let jwt_secret =
-            env::var("JWT_SECRET").expect("Missing the JWT_SECRET environment variable.");
-        let jwt_refresh_secret = env::var("JWT_REFRESH_SECRET")
-            .expect("Missing the JWT_REFRESH_SECRET environment variable.");
+        // let jwt_secret =
+        //     env::var("JWT_SECRET").expect("Missing the JWT_SECRET environment variable.");
+        // let jwt_refresh_secret = env::var("JWT_REFRESH_SECRET")
+        //     .expect("Missing the JWT_REFRESH_SECRET environment variable.");
         // Process request headers as needed
         match ctx.data_opt::<HeaderMap>() {
             Some(headers) => {
@@ -57,23 +60,46 @@ impl Query {
                                 match cookies.get("oauth_client") {
                                     Some(oauth_client) => {
                                         if oauth_client.is_empty() {
-                                            let key: Hmac<Sha256> = Hmac::new_from_slice(
-                                                jwt_secret.as_str().as_bytes(),
-                                            )
-                                            .unwrap();
+                                            // TODO: need to use the same key for both access and refresh tokens
+                                            let key: Vec<u8>;
+                                            let db = ctx
+                                                .data::<Extension<Arc<Surreal<Client>>>>()
+                                                .unwrap();
+                                            let mut result = db.query("SELECT * FROM type::table($table) WHERE name = 'jwt_key' LIMIT 1")
+                                                    .bind(("table", "keys"))
+                                                    .await?;
+                                            let response: Option<SymKey> = result.take(0)?;
+
+                                            match &response {
+                                                Some(key_container) => {
+                                                    key = key_container.key.clone();
+                                                }
+                                                None => {
+                                                    // key = HS256Key::generate().to_bytes();
+                                                    return Err(ExtendedError::new(
+                                                        "Not Authorized!",
+                                                        Some(403),
+                                                    )
+                                                    .build());
+                                                }
+                                            }
+
+                                            let converted_key = HS256Key::from_bytes(&key);
+
                                             let token_str =
                                                 token.to_str().unwrap().strip_prefix("Bearer ");
-                                            let mut _claims: Result<
-                                                BTreeMap<String, String>,
-                                                jwt::Error,
-                                            > = Ok(BTreeMap::new());
 
                                             // Check if token is present and valid
                                             match token_str {
                                                 Some(token_str) => {
-                                                    _claims = token_str.verify_with_key(&key);
+                                                    let _claims = converted_key
+                                                        .verify_token::<AuthClaim>(
+                                                            &token_str, None,
+                                                        );
 
-                                                    match &mut _claims {
+                                                    println!("claims: {:?}", _claims);
+
+                                                    match &_claims {
                                                         Ok(_) => {
                                                             // Token verification successful
                                                             return Ok(AuthStatus {
@@ -81,27 +107,11 @@ impl Query {
                                                             });
                                                         }
                                                         Err(_err) => {
+                                                            println!("err: {:?}", _err.to_string());
                                                             // Token verification failed, check if refresh token is present
                                                             match cookies.get("t") {
                                                                 Some(refresh_token) => {
-                                                                    let jwt_refresh_key: Hmac<
-                                                                        Sha256,
-                                                                    > = Hmac::new_from_slice(
-                                                                        jwt_refresh_secret
-                                                                            .as_str()
-                                                                            .as_bytes(),
-                                                                    )
-                                                                    .unwrap();
-
-                                                                    let mut _refresh_claims: Result<
-                                                                        BTreeMap<String, String>,
-                                                                        jwt::Error,
-                                                                    > = Ok(BTreeMap::new());
-
-                                                                    _refresh_claims = refresh_token
-                                                                        .verify_with_key(
-                                                                            &jwt_refresh_key,
-                                                                        );
+                                                                    let _refresh_claims = converted_key.verify_token::<AuthClaim>(&refresh_token, None);
 
                                                                     match _refresh_claims {
                                                                         Ok(_) => {
@@ -125,14 +135,19 @@ impl Query {
                                                                 }
                                                                 None => Err(ExtendedError::new(
                                                                     "Not Authorized!",
-                                                                    Some(403)
-                                                                ).build()),
+                                                                    Some(403),
+                                                                )
+                                                                .build()),
                                                             }
                                                             // return Err(Error::new("Not Authorized!"));
                                                         }
                                                     }
                                                 }
-                                                None => Err(ExtendedError::new("Invalid request!", Some(400)).build()),
+                                                None => Err(ExtendedError::new(
+                                                    "Invalid request!",
+                                                    Some(400),
+                                                )
+                                                .build()),
                                             }
                                         } else {
                                             let oauth_client_name =
@@ -155,25 +170,26 @@ impl Query {
                                                     let client = ReqWestClient::new();
 
                                                     let mut req_headers = ReqWestHeaderMap::new();
-                                                    req_headers.insert(
-                                                        "Authorization",
-                                                        token.to_owned(),
-                                                    );
+                                                    req_headers
+                                                        .insert("Authorization", token.to_owned());
 
-                                                    req_headers.insert(
+                                                    req_headers.append(
                                                         "Accept",
-                                                            "application/vnd.github+json".parse().unwrap(),
+                                                        "application/vnd.github+json"
+                                                            .parse()
+                                                            .unwrap(),
                                                     );
 
-                                                    req_headers.insert(
+                                                    req_headers.append(
                                                         "X-GitHub-Api-Version",
-                                                            "2022-11-28".parse().unwrap(),
+                                                        "2022-11-28".parse().unwrap(),
                                                     );
 
                                                     println!("req_headers: {:?}", req_headers);
 
                                                     let response = client
-                                                        .get("https://api.github.com/user")
+                                                    .request(Method::GET, "https://api.github.com/user")
+                                                        // .get("https://api.github.com/user")
                                                         .headers(req_headers)
                                                         .send()
                                                         .await?
@@ -187,7 +203,10 @@ impl Query {
                                             }
                                         }
                                     }
-                                    None => Err(ExtendedError::new("Not Authorized!", Some(403)).build()),
+                                    None => {
+                                        Err(ExtendedError::new("Not Authorized!", Some(403))
+                                            .build())
+                                    }
                                 }
                             }
                             None => Err(ExtendedError::new("Not Authorized!", Some(403)).build()),
