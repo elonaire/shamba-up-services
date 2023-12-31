@@ -6,7 +6,7 @@ use axum::{
     Extension,
 };
 use dotenvy::dotenv;
-use hyper::Method;
+use hyper::{Method, header::SET_COOKIE};
 use jwt_simple::prelude::*;
 use lib::utils::{cookie_parser::parse_cookies, custom_error::ExtendedError};
 use reqwest::{header::HeaderMap as ReqWestHeaderMap, Client as ReqWestClient};
@@ -60,7 +60,6 @@ impl Query {
                                 match cookies.get("oauth_client") {
                                     Some(oauth_client) => {
                                         if oauth_client.is_empty() {
-                                            // TODO: need to use the same key for both access and refresh tokens
                                             let key: Vec<u8>;
                                             let db = ctx
                                                 .data::<Extension<Arc<Surreal<Client>>>>()
@@ -111,18 +110,68 @@ impl Query {
                                                             // Token verification failed, check if refresh token is present
                                                             match cookies.get("t") {
                                                                 Some(refresh_token) => {
-                                                                    let _refresh_claims = converted_key.verify_token::<AuthClaim>(&refresh_token, None);
+                                                                    let refresh_claims = converted_key.verify_token::<AuthClaim>(&refresh_token, None);
 
-                                                                    match _refresh_claims {
-                                                                        Ok(_) => {
-                                                                            // Refresh token verification successful, issue new access token
+                                                                    match refresh_claims {
+                                                                        Ok(refresh_claims) => {
+                                                                            println!("refresh_claims: {:?}", refresh_claims);
+                                                                            // TODO: Refresh token verification successful, issue new access token
                                                                             // call sign_in mutation
+                                                                            let user: Option<User> =
+                                                                                db.select((
+                                                                                    "user",
+                                                                                    refresh_claims
+                                                                                        .subject
+                                                                                        .unwrap()
+                                                                                        .as_str(),
+                                                                                ))
+                                                                                .await?;
 
-                                                                            return Ok(
-                                                                                AuthStatus {
-                                                                                    is_auth: false,
-                                                                                },
-                                                                            );
+                                                                            match user {
+                                                                                Some(user) => {
+                                                                                    let auth_claim = AuthClaim {
+                                                                                        roles: user
+                                                                                            .roles
+                                                                                            .as_ref()
+                                                                                            .map(|t| t.iter().map(|t| t.id.to_raw()).collect())
+                                                                                            .unwrap_or(vec![]),
+                                                                                    };
+
+                                                                                    let mut token_claims = Claims::with_custom_claims(auth_claim.clone(), Duration::from_secs(15 * 60));
+                                                                                    token_claims.subject = Some(user.id.as_ref().map(|t| &t.id).expect("id").to_raw());
+
+                                                                                    let token = converted_key
+                                                                                        .authenticate(token_claims)
+                                                                                        .unwrap();
+
+                                                                                    ctx.insert_http_header(
+                                                                                        SET_COOKIE,
+                                                                                        format!("oauth_client="),
+                                                                                    );
+
+                                                                                    ctx.append_http_header(
+                                                                                        "New-Access-Token",
+                                                                                        format!("Bearer {}", token),
+                                                                                    );
+
+                                                                                    return Ok(AuthStatus {
+                                                                                        is_auth: true,
+                                                                                    });
+                                                                                }
+                                                                                None => {
+                                                                                    return Err(ExtendedError::new(
+                                                                                        "Not Authorized!",
+                                                                                        Some(403),
+                                                                                    )
+                                                                                    .build());
+                                                                                }
+                                                                            }
+
+                                                                            // return Ok(
+                                                                            //     AuthStatus {
+                                                                            //         is_auth: false,
+                                                                            //     },
+                                                                            // );
                                                                         }
                                                                         Err(_err) => {
                                                                             // Refresh token verification failed
@@ -188,7 +237,10 @@ impl Query {
                                                     println!("req_headers: {:?}", req_headers);
 
                                                     let response = client
-                                                    .request(Method::GET, "https://api.github.com/user")
+                                                        .request(
+                                                            Method::GET,
+                                                            "https://api.github.com/user",
+                                                        )
                                                         // .get("https://api.github.com/user")
                                                         .headers(req_headers)
                                                         .send()
