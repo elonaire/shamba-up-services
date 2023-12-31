@@ -104,12 +104,12 @@ pub struct AuthStatus {
     pub is_auth: bool,
 }
 
-#[derive(Serialize)]
-#[serde(untagged)]
-pub enum JWTClaimBTreeMapItem {
-    String(String),
-    Integer(u64),
-}
+// #[derive(Serialize)]
+// #[serde(untagged)]
+// pub enum JWTClaimBTreeMapItem {
+//     String(String),
+//     Integer(u64),
+// }
 
 #[derive(Clone, Debug, Serialize, Deserialize, SimpleObject)]
 pub struct DecodedGoogleOAuthToken {
@@ -121,7 +121,7 @@ pub struct DecodedGoogleOAuthToken {
     pub expires_in: String,
 }
 
-// use the json above to create a struct
+
 #[derive(Clone, Debug, Serialize, Deserialize, SimpleObject)]
 pub struct DecodedGithubOAuthToken {
     pub login: String,
@@ -156,5 +156,26 @@ pub struct DecodedGithubOAuthToken {
     pub following: u64,
     pub created_at: String,
     pub updated_at: String,
+    pub private_gists: u64,
+    pub total_private_repos: u64,
+    pub owned_private_repos: u64,
+    pub disk_usage: u64,
+    pub collaborators: u64,
+    pub two_factor_authentication: bool,
+    pub plan: Plan,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, SimpleObject)]
+pub struct Plan {
+    pub name: String,
+    pub space: u64,
+    pub collaborators: u64,
+    pub private_repos: u64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SymKey {
+    pub name: String,
+    pub key: Vec<u8>,
 }
 
