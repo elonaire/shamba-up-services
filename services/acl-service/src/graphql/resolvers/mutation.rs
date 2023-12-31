@@ -18,7 +18,7 @@ pub struct Mutation;
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AuthClaim {
     // pub sub: String,
-    roles: Vec<String>,
+    pub roles: Vec<String>,
 }
 
 #[Object]
@@ -98,7 +98,6 @@ impl Mutation {
 
                         if password_match {
                             let refresh_token_expiry_duration = Duration::from_secs(30 * 24 * 60 * 60); // minutes by 60 seconds
-                            // TODO: Store the key in the database, generate a new key if the key is not found
                             let key: Vec<u8>;
                             let db = ctx.data::<Extension<Arc<Surreal<Client>>>>().unwrap();
                             let mut result = db.query("SELECT * FROM type::table($table) WHERE name = 'jwt_key' LIMIT 1")
@@ -135,7 +134,8 @@ impl Mutation {
                             token_claims.subject = Some(user.id.as_ref().map(|t| &t.id).expect("id").to_raw());
                             let token_str = converted_key.authenticate(token_claims).unwrap();
 
-                            let refresh_token_claims = Claims::with_custom_claims(auth_claim.clone(), refresh_token_expiry_duration);
+                            let mut refresh_token_claims = Claims::with_custom_claims(auth_claim.clone(), refresh_token_expiry_duration);
+                            refresh_token_claims.subject = Some(user.id.as_ref().map(|t| &t.id).expect("id").to_raw());
                             let refresh_token_str = converted_key.authenticate(refresh_token_claims).unwrap();
 
                             ctx.insert_http_header(SET_COOKIE, format!("oauth_client="));
