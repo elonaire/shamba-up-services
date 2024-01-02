@@ -13,8 +13,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  # ACL_SHOULD_DEPLOY: 'false'
-  # SHARED_SERVICE_SHOULD_DEPLOY: 'false'
+  ACL_SHOULD_DEPLOY: 'false'
+  SHARED_SERVICE_SHOULD_DEPLOY: 'false'
   ACL_PATHS: 'services/acl-service/'
   SHARED_SERVICE_PATHS: 'services/shared-service/'
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
@@ -52,6 +52,8 @@ jobs:
           if echo "${{ steps.file_changes.outputs.changed_files }}" | grep -q "${{ env.ACL_PATHS }}"; then
             # Set the output variable and exit the loop
             echo "triggering_path is ${{ env.ACL_PATHS }}"
+            # echo "::set-env name=ACL_SHOULD_DEPLOY::true"
+            echo "ACL_SHOULD_DEPLOY=true" >> $GITHUB_ENV
           else
             exit 0
           fi
@@ -88,6 +90,8 @@ jobs:
           if echo "${{ steps.file_changes.outputs.changed_files }}" | grep -q "${{ env.SHARED_SERVICE_PATHS }}"; then
             # Set the output variable and exit the loop
             echo "triggering_path is ${{ env.SHARED_SERVICE_PATHS }}"
+            # echo "::set-env name=SHARED_SERVICE_SHOULD_DEPLOY::true"
+            echo "SHARED_SERVICE_SHOULD_DEPLOY=true" >> $GITHUB_ENV
           else
             exit 0
           fi
@@ -95,7 +99,7 @@ jobs:
   build_and_deploy_acl:
     runs-on: ubuntu-latest
     needs: [check_acl_changes]
-    if: needs.check_acl_changes.result == 'success'
+    if: github.env.ACL_SHOULD_DEPLOY == 'true'
 
     permissions:
       id-token: write # required to use OIDC authentication
