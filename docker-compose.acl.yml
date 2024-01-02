@@ -28,6 +28,8 @@ services:
       dockerfile: Dockerfile
       args:
         SERVICE_NAME: acl-service
+    volumes:
+      - ./services/acl-service/src/database/schemas/schemas.surql:/usr/src/db/schemas.surql
     environment:
       - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
       - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
@@ -43,10 +45,8 @@ services:
       - DATABASE_NAME_ACL=${DATABASE_NAME_ACL}
       - DATABASE_USER=${DATABASE_USER}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD}
-      - DATABASE_HOST=${DATABASE_HOST}
+      - DATABASE_HOST_ACL=${DATABASE_HOST_ACL}
       - DATABASE_PORT_ACL=${DATABASE_PORT_ACL}
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
     depends_on:
       - acl-db
 
