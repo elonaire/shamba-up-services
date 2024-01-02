@@ -39,7 +39,7 @@ jobs:
           echo "Head SHA: ${{ github.sha }}"
           files_temp=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
           files=$(echo "$files_temp" | tr "\n" " ")
-          echo "changed_files=$files" >> $GITHUB_OUTPUT
+          echo "changed_files=$files" >> "$GITHUB_OUTPUT"
 
       - id: confirm_changes
         name: Confirm Changes
@@ -52,8 +52,7 @@ jobs:
           if echo "${{ steps.file_changes.outputs.changed_files }}" | grep -q "${{ env.ACL_PATHS }}"; then
             # Set the output variable and exit the loop
             echo "triggering_path is ${{ env.ACL_PATHS }}"
-            # echo "::set-env name=ACL_SHOULD_DEPLOY::true"
-            echo "ACL_SHOULD_DEPLOY=true" >> $GITHUB_ENV
+            echo "ACL_SHOULD_DEPLOY=true" >> "$GITHUB_ENV"
           else
             exit 0
           fi
@@ -77,7 +76,7 @@ jobs:
           echo "Head SHA: ${{ github.sha }}"
           files_temp=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
           files=$(echo "$files_temp" | tr "\n" " ")
-          echo "changed_files=$files" >> $GITHUB_OUTPUT
+          echo "changed_files=$files" >> "$GITHUB_OUTPUT"
 
       - id: confirm_changes
         name: Confirm Changes
@@ -90,8 +89,7 @@ jobs:
           if echo "${{ steps.file_changes.outputs.changed_files }}" | grep -q "${{ env.SHARED_SERVICE_PATHS }}"; then
             # Set the output variable and exit the loop
             echo "triggering_path is ${{ env.SHARED_SERVICE_PATHS }}"
-            # echo "::set-env name=SHARED_SERVICE_SHOULD_DEPLOY::true"
-            echo "SHARED_SERVICE_SHOULD_DEPLOY=true" >> $GITHUB_ENV
+            echo "SHARED_SERVICE_SHOULD_DEPLOY=true" >> "$GITHUB_ENV"
           else
             exit 0
           fi
@@ -99,7 +97,7 @@ jobs:
   build_and_deploy_acl:
     runs-on: ubuntu-latest
     needs: [check_acl_changes]
-    if: github.env.ACL_SHOULD_DEPLOY == 'true'
+    if: ${{ github.env.ACL_SHOULD_DEPLOY == 'true' }}
 
     permissions:
       id-token: write # required to use OIDC authentication
@@ -126,7 +124,7 @@ jobs:
   build_and_deploy_shared_service:
     runs-on: ubuntu-latest
     needs: [check_shared_service_changes]
-    if: github.env.SHARED_SERVICE_SHOULD_DEPLOY == 'true'
+    if: ${{ github.env.SHARED_SERVICE_SHOULD_DEPLOY == 'true' }}
 
     permissions:
       id-token: write # required to use OIDC authentication
