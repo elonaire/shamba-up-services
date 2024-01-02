@@ -7,7 +7,6 @@ use std::sync::Arc;
 
 use async_graphql::{http::GraphiQLSource, EmptySubscription, Schema};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
-// use auth::oauth::OAuthClientInstance;
 use axum::{
     extract::{Extension, Query as AxumQuery},
     headers::Cookie,
@@ -35,19 +34,15 @@ use crate::auth::oauth::{initiate_auth_code_grant_flow, OAuthClientName};
 
 type MySchema = Schema<Query, Mutation, EmptySubscription>;
 
-// type SharedState = Arc<RwLock<AppState>>;
-
 async fn graphql_handler(
     schema: Extension<MySchema>,
     db: Extension<Arc<Surreal<Client>>>,
-    // state: Extension<SharedState>,
     headers: HeaderMap,
     req: GraphQLRequest,
     
 ) -> GraphQLResponse {
     let mut request = req.0;
     request = request.data(db.clone());
-    // request = request.data(state.clone());
     request = request.data(headers.clone());
     schema.execute(request).await.into()
 }
@@ -56,14 +51,7 @@ async fn graphiql() -> impl IntoResponse {
     Html(GraphiQLSource::build().endpoint("/").finish())
 }
 
-// #[derive(Clone)]
-// pub struct AppState {
-//     pub oauth_client: Option<OAuthClientInstance>,
-//     pub csrf_state: Option<String>,
-// }
-
 #[derive(Debug, Deserialize, Clone)]
-#[allow(dead_code)]
 struct Params {
     code: Option<String>,
     state: Option<String>,
@@ -115,10 +103,6 @@ async fn oauth_handler(
 #[tokio::main]
 async fn main() -> Result<()> {
     let db = Arc::new(database::connection::create_db_connection().await.unwrap());
-    // let state = Arc::new(RwLock::new(AppState {
-    //     oauth_client: None,
-    //     csrf_state: None,
-    // }));
 
     let schema = Schema::build(Query, Mutation, EmptySubscription).finish();
 
@@ -129,7 +113,6 @@ async fn main() -> Result<()> {
         .route("/oauth/callback", get(oauth_handler))
         .layer(Extension(schema))
         .layer(Extension(db))
-        // .layer(Extension(state))
         .layer(
             CorsLayer::new()
                 .allow_origin("http://localhost:8080".parse::<HeaderValue>().unwrap())
