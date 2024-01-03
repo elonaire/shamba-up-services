@@ -53,6 +53,7 @@ jobs:
             # Set the output variable and exit the loop
             echo "triggering_path is ${{ env.ACL_PATHS }}"
             echo "ACL_SHOULD_DEPLOY=true" >> "$GITHUB_ENV"
+            echo "ACL_SHOULD_DEPLOY is: ${{ env.ACL_SHOULD_DEPLOY }}"
           else
             exit 0
           fi
