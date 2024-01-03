@@ -13,8 +13,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  ACL_SHOULD_DEPLOY: 'false'
-  SHARED_SERVICE_SHOULD_DEPLOY: 'false'
+  # ACL_SHOULD_DEPLOY: 'false'
+  # SHARED_SERVICE_SHOULD_DEPLOY: 'false'
   ACL_PATHS: 'services/acl-service/'
   SHARED_SERVICE_PATHS: 'services/shared-service/'
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
@@ -53,8 +53,8 @@ jobs:
             # Set the output variable and exit the loop
             echo "triggering_path is ${{ env.ACL_PATHS }}"
             echo "ACL_SHOULD_DEPLOY=true" >> "$GITHUB_ENV"
-            echo "ACL_SHOULD_DEPLOY is: ${{ env.ACL_SHOULD_DEPLOY }}"
           else
+            echo "ACL_SHOULD_DEPLOY=false" >> "$GITHUB_ENV"
             exit 0
           fi
   check_shared_service_changes:
@@ -92,6 +92,7 @@ jobs:
             echo "triggering_path is ${{ env.SHARED_SERVICE_PATHS }}"
             echo "SHARED_SERVICE_SHOULD_DEPLOY=true" >> "$GITHUB_ENV"
           else
+            echo "SHARED_SERVICE_SHOULD_DEPLOY=false" >> "$GITHUB_ENV"
             exit 0
           fi
 
