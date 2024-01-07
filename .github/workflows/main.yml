@@ -22,6 +22,8 @@ jobs:
   check_acl_changes:
     runs-on: ubuntu-latest
     # needs: [build]
+    outputs:
+      acl_service_should_deploy: ${{ steps.confirm_changes.outputs.ACL_SHOULD_DEPLOY }}
 
     permissions:
       id-token: write # required to use OIDC authentication
@@ -39,7 +41,7 @@ jobs:
           echo "Head SHA: ${{ github.sha }}"
           files_temp=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
           files=$(echo "$files_temp" | tr "\n" " ")
-          echo "changed_files=$files" >> $GITHUB_OUTPUT
+          echo "changed_files=$files" >> "$GITHUB_OUTPUT"
 
       - id: confirm_changes
         name: Confirm Changes
@@ -52,12 +54,17 @@ jobs:
           if echo "${{ steps.file_changes.outputs.changed_files }}" | grep -q "${{ env.ACL_PATHS }}"; then
             # Set the output variable and exit the loop
             echo "triggering_path is ${{ env.ACL_PATHS }}"
+            echo "ACL_SHOULD_DEPLOY=true" >> "$GITHUB_OUTPUT"
+            cat "$GITHUB_OUTPUT"
           else
+            echo "ACL_SHOULD_DEPLOY=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
   check_shared_service_changes:
     runs-on: ubuntu-latest
     # needs: [build]
+    outputs:
+      shared_service_should_deploy: ${{ steps.confirm_changes.outputs.SHARED_SERVICE_SHOULD_DEPLOY }}
 
     permissions:
       id-token: write # required to use OIDC authentication
@@ -75,7 +82,7 @@ jobs:
           echo "Head SHA: ${{ github.sha }}"
           files_temp=$(git diff --name-only --diff-filter=ACMRT ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
           files=$(echo "$files_temp" | tr "\n" " ")
-          echo "changed_files=$files" >> $GITHUB_OUTPUT
+          echo "changed_files=$files" >> "$GITHUB_OUTPUT"
 
       - id: confirm_changes
         name: Confirm Changes
@@ -88,14 +95,17 @@ jobs:
           if echo "${{ steps.file_changes.outputs.changed_files }}" | grep -q "${{ env.SHARED_SERVICE_PATHS }}"; then
             # Set the output variable and exit the loop
             echo "triggering_path is ${{ env.SHARED_SERVICE_PATHS }}"
+            echo "SHARED_SERVICE_SHOULD_DEPLOY=true" >> "$GITHUB_OUTPUT"
+            cat "$GITHUB_OUTPUT"
           else
+            echo "SHARED_SERVICE_SHOULD_DEPLOY=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
   build_and_deploy_acl:
     runs-on: ubuntu-latest
     needs: [check_acl_changes]
-    if: needs.check_acl_changes.result == 'success'
+    if: ${{ needs.check_acl_changes.outputs.acl_service_should_deploy == 'true' }}
 
     permissions:
       id-token: write # required to use OIDC authentication
@@ -122,7 +132,7 @@ jobs:
   build_and_deploy_shared_service:
     runs-on: ubuntu-latest
     needs: [check_shared_service_changes]
-    if: github.env.SHARED_SERVICE_SHOULD_DEPLOY == 'true'
+    if: ${{ needs.check_shared_service_changes.outputs.shared_service_should_deploy == 'true' }}
 
     permissions:
       id-token: write # required to use OIDC authentication
@@ -154,7 +164,8 @@ jobs:
       always() &&
       (
         needs.build_and_deploy_acl.result == 'success' ||
-        needs.build_and_deploy_shared_service.result == 'success'
+        needs.build_and_deploy_shared_service.result == 'success' ||
+        (needs.build_and_deploy_acl.result == 'skipped' && needs.build_and_deploy_shared_service.result == 'skipped')
       )
 
     steps:
