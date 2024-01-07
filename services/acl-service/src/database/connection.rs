@@ -25,7 +25,7 @@ pub async fn create_db_connection() -> Result<Surreal<Client>> {
     // Select a specific namespace and database
     db.use_ns(db_namespace.as_str()).use_db(db_name.as_str()).await?;
 
-    // Perform migrations on
+    // Perform migrations
     // println!("{:?}", env::current_dir());
     // let file_name = "src/database/schemas/schemas.surql";
     let file_name = "/usr/src/db/schemas.surql"; 

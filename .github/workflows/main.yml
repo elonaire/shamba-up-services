@@ -22,6 +22,8 @@ jobs:
   check_acl_changes:
     runs-on: ubuntu-latest
     # needs: [build]
+    outputs:
+      acl_service_should_deploy: ${{ steps.file_changes.outputs.ACL_SHOULD_DEPLOY }}
 
     permissions:
       id-token: write # required to use OIDC authentication
@@ -61,6 +63,8 @@ jobs:
   check_shared_service_changes:
     runs-on: ubuntu-latest
     # needs: [build]
+    outputs:
+      shared_service_should_deploy: ${{ steps.file_changes.outputs.SHARED_SERVICE_SHOULD_DEPLOY }}
 
     permissions:
       id-token: write # required to use OIDC authentication
@@ -101,7 +105,7 @@ jobs:
   build_and_deploy_acl:
     runs-on: ubuntu-latest
     needs: [check_acl_changes]
-    if: ${{ needs.check_acl_changes.outputs.ACL_SHOULD_DEPLOY == 'true' }}
+    if: ${{ needs.check_acl_changes.outputs.acl_service_should_deploy == 'true' }}
 
     permissions:
       id-token: write # required to use OIDC authentication
@@ -128,7 +132,7 @@ jobs:
   build_and_deploy_shared_service:
     runs-on: ubuntu-latest
     needs: [check_shared_service_changes]
-    if: ${{ needs.check_shared_service_changes.outputs.SHARED_SERVICE_SHOULD_DEPLOY == 'true' }}
+    if: ${{ needs.check_shared_service_changes.outputs.shared_service_should_deploy == 'true' }}
 
     permissions:
       id-token: write # required to use OIDC authentication
