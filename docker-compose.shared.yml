@@ -1,0 +1,43 @@
+version: '3.8'
+
+networks:
+  app-tier:
+    driver: bridge
+
+services:
+  shared-servicedb:
+    image: surrealdb/surrealdb:1.0.0
+    ports:
+      - 8001:8000
+    container_name: shared-servicedb
+    networks:
+      - app-tier
+    user: root
+    command: start --log debug --user root --pass root file:/db-data/mydatabase.db
+    volumes:
+      - shared-servicedb:/db-data
+
+  shared-service:
+    image: elonaire/shared-service:latest
+    ports:
+      - 3002:3002
+    container_name: shared-service
+    networks:
+      - app-tier
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: shared-service
+    environment:
+      - DATABASE_NAMESPACE=${DATABASE_NAMESPACE}
+      - DATABASE_NAME_SHARED=${DATABASE_NAME_SHARED}
+      - DATABASE_USER=${DATABASE_USER}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - DATABASE_HOST_SHARED=${DATABASE_HOST_SHARED}
+      - DATABASE_PORT_SHARED=${DATABASE_PORT_SHARED}
+    depends_on:
+      - shared-servicedb
+
+volumes:
+    shared-servicedb:

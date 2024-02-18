@@ -1,5 +1,5 @@
 [package]
-name = "acl-service"
+name = "shared-service"
 version = "0.1.0"
 edition = "2021"
 
@@ -15,14 +15,9 @@ tower-http = { version = "0.4.0", features = ["cors"] }
 surrealdb = "1.0.0"
 chrono = "0.4.31"
 serde = "1.0.189"
-bcrypt = "0.15.0"
-oauth2 = "4.4.2"
-cookie = "0.18.0"
 dotenvy = "0.15.7"
 async-trait = "0.1.74"
 lib = { path = "../../lib" }
-reqwest = { version = "0.11.6", features = ["json"] }
-jwt-simple = "0.11.9"
-
-[future-incompat-report]
-frequency = "always"
+reqwest = { version = "0.11.6", features = ["json", "multipart"] }
+aws-config = { version = "1.1.1", features = ["behavior-version-latest"] }
+aws-sdk-s3 = "1.11.0"

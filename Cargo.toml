@@ -1,5 +1,13 @@
 [workspace]
+resolver = "2"
 members = [
+    # Libs
+    "lib",
+    # Services
     "services/acl-service",
     # Add other services here
+    "services/shared-service",
 ]
+
+[profile.release]
+strip = true  # Automatically strip symbols from the binary.
