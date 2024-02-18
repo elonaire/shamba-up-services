@@ -16,7 +16,7 @@ libssl-dev
 RUN apt update
 RUN curl https://sh.rustup.rs -sSf | bash -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
-RUN rustup default nightly
+RUN rustup default nightly-2024-02-04
 
 WORKDIR /app
 
