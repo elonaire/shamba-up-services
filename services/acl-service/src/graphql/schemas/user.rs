@@ -33,6 +33,14 @@ pub struct User {
     #[graphql(skip)]
     pub roles: Option<Vec<Thing>>,
     pub oauth_client: Option<OAuthClientName>,
+    pub profile_picture: Option<String>,
+    pub bio: Option<String>,
+    pub website: Option<String>,
+    pub address: Option<String>,
+    #[graphql(skip)]
+    pub professional_details: Option<Thing>,
+    #[graphql(skip)]
+    pub portfolio: Option<Vec<Thing>>,
 }
 
 #[ComplexObject]
@@ -179,3 +187,40 @@ pub struct SymKey {
     pub key: Vec<u8>,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize, SimpleObject, InputObject)]
+#[graphql(input_name = "ProfessionInput")]
+pub struct Profession {
+    pub user_id: String,
+    pub occupation: String,
+    pub description: String,
+    pub start_date: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, SimpleObject, InputObject)]
+#[graphql(input_name = "UserUpdateInput")]
+pub struct UserUpdate {
+    pub user_name: String,
+    pub first_name: String,
+    pub middle_name: Option<String>,
+    pub last_name: String,
+    pub gender: Gender,
+    pub dob: String,
+    pub email: String,
+    pub country: String,
+    pub phone: String,
+    #[graphql(secret)]
+    pub password: String,
+    pub created_at: Option<String>,
+    pub updated_at: Option<String>,
+    #[graphql(skip)]
+    pub roles: Option<Vec<Thing>>,
+    pub oauth_client: Option<OAuthClientName>,
+    pub profile_picture: Option<String>,
+    pub bio: Option<String>,
+    pub website: Option<String>,
+    pub address: Option<String>,
+    #[graphql(skip)]
+    pub professional_details: Option<Thing>,
+    #[graphql(skip)]
+    pub portfolio: Option<Vec<Thing>>,
+}
