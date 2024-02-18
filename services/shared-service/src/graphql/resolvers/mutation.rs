@@ -94,8 +94,8 @@ impl Mutation {
         // upload in one go
         let presigned_request = client
             .put_object()
-            .bucket(bucket.clone())
-            .key(key.clone())
+            .bucket(bucket)
+            .key(key)
             .presigned(PresigningConfig::expires_in(presigned_url_expiry)?)
             .await?;
 
