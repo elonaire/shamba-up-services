@@ -17,7 +17,7 @@ use axum::{
 };
 
 use graphql::resolvers::query::Query;
-use hyper::{Method, Server};
+use hyper::{header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE}, Method, Server};
 use oauth2::{
     basic::BasicTokenType,
     reqwest::async_http_client,
@@ -116,6 +116,7 @@ async fn main() -> Result<()> {
         .layer(
             CorsLayer::new()
                 .allow_origin("http://localhost:8080".parse::<HeaderValue>().unwrap())
+                .allow_headers([AUTHORIZATION, ACCEPT, CONTENT_TYPE])
                 .allow_methods(vec![Method::GET, Method::POST]),
         );
 
