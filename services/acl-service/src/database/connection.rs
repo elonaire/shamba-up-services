@@ -27,8 +27,8 @@ pub async fn create_db_connection() -> Result<Surreal<Client>> {
 
     // Perform migrations
     // println!("{:?}", env::current_dir());
-    // let file_name = "src/database/schemas/schemas.surql";
-    let file_name = "/usr/src/db/schemas.surql"; 
+    let file_name = "src/database/schemas/schemas.surql";
+    // let file_name = "/usr/src/db/schemas.surql"; 
     let schema = read_file_to_string(file_name);
     db.query(schema.as_str()).await?;
 
