@@ -13,7 +13,7 @@ services:
       # - "443:443" # Uncomment this line if you want to use https
     depends_on:
       - acl-service
-      # - shared-service
+      - shared-service
     volumes:
       # - ./certs:/etc/nginx/certs # Uncomment this line if you want to use https
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
