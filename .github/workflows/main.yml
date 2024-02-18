@@ -124,7 +124,8 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Build the Docker image
-        run: docker-compose  -f docker-compose.yml -f docker-compose.acl.yml build
+        # run: docker-compose  -f docker-compose.yml -f docker-compose.acl.yml build
+        run: docker-compose -f docker-compose.acl.yml build
 
       - name: Push the Docker image
         run: docker push elonaire/acl-service:latest
@@ -151,7 +152,8 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Build the Docker image
-        run: docker-compose  -f docker-compose.yml -f docker-compose.shared.yml build
+        # run: docker-compose  -f docker-compose.yml -f docker-compose.shared.yml build
+        run: docker-compose -f docker-compose.shared.yml build
 
       - name: Push the Docker image
         run: docker push elonaire/shared-service:latest
